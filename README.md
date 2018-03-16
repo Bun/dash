@@ -3,6 +3,8 @@
 A customizable Home Assistant dashboard.
 Work in progress.
 
+![Screenshot](https://raw.githubusercontent.com/Bun/dash/assets/screenshots/simple-theme.png)
+
 Features:
 
 * Clickable tile-buttons
@@ -10,7 +12,6 @@ Features:
 
 TODO:
 
-* Some screenshots
 * Multimedia buttons
 * Some cool graph stuff
 * Group entity rendering
