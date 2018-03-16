@@ -1,0 +1,74 @@
+@charset "utf-8";
+
+/* VERY basic theme
+ */
+
+html, body {
+    background-color: white;
+    color: black;
+    font-family: sans-serif;
+}
+
+.tiles > button {
+    background-color: #eee;
+    padding: 0 3px;
+}
+
+header {
+    background-color: #ccc;
+    height: 39px;
+}
+
+header > button {
+    background: none;
+    margin: 0 16px;
+}
+
+.tiles {
+    margin: 4px auto;
+}
+
+@media (min-width: 818px) {
+    .tiles { margin: 10px auto; }
+}
+
+.big { font-size: 120% }
+.description { font-size: 80% }
+.really-big { font-size: 500% }
+
+.image-tile img {
+    border-radius: 50%
+}
+
+.image-tile[data-state=not_home] img {
+    filter: grayscale(95%)
+}
+
+[data-state=on] .state-text {
+    font-weight: bold;
+    color: green
+}
+
+
+/* Place the control buttons the way I want them
+ */
+.light-control {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+[data-state=off] .light-control .attr-btn {
+    display: none
+}
+
+.light-control .control-text {
+    flex-grow: 1;
+    width: 100%;
+}
+.light-control .attr-btn {
+    padding: 4px 0;
+    width: 100%;
+}

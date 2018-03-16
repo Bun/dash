@@ -1,0 +1,142 @@
+# Real-life example
+script: |
+  if (vars.entity_id && vars.entity_id.match(/^light\./)) {
+    console.log(vars.entity_id);
+  }
+
+templates:
+  light: |
+    <div class="light-control">
+      <button class="attr-btn" data-attr="brightness" data-incr="10">+</button>
+      <button class="control-text">{{friendly_name}}</button>
+      <button class="attr-btn" data-attr="brightness" data-incr="-10">-</button>
+    </div>
+
+---
+- element: header
+  display: '<img src="img/home.png">'
+  children:
+    - entity: sensor.time
+      class: segment
+      display: '{{state}}'
+    - entity: sensor.date
+      class: smaller segment
+      display: '{{state}}'
+
+- element: div
+  class: tiles
+  children:
+    - entity: sun.sun
+      class: really-big
+      display: '{{icon}}'
+      script: |
+        vars.icon = replace(vars.state, {
+          "above_horizon": "☀",
+          "below_horizon": "☽"});
+
+    - entity: sensor.dark_sky_hourly_summary
+      class: wide
+      display: |
+        {{pic attributes.entity_picture}}
+        {{state}}
+
+    - element: div
+      class: hide-small
+      style: 'grid-column: span 2'
+
+    - element: button
+      children:
+      - entity: sensor.zolder_temperature
+        element: div
+        class: big
+        display: '<div class="description">Inside</div> {{state}}{{attributes.unit_of_measurement}}'
+      - entity: sensor.zolder_humidity
+        element: div
+        class: big
+        display: '<div class="description">Humidity</div> {{state}}{{attributes.unit_of_measurement}}'
+
+    - element: div
+      class: hide-small
+
+    - element: button
+      children:
+      - entity: sensor.dark_sky_temperature
+        element: div
+        class: big
+        display: '<div class="description">Outside</div> {{state}}{{attributes.unit_of_measurement}}'
+
+      - entity: sensor.dark_sky_apparent_temperature
+        element: div
+        class: big
+        display: '<div class="description">Feels like</div> {{state}}{{attributes.unit_of_measurement}}'
+
+    # Row 2
+
+    - entity: light.zolder_achter
+      template: light
+      vars:
+        friendly_name: "Office A"
+
+    - entity: light.zolder_voor
+      template: light
+      vars:
+        friendly_name: "Office B"
+
+    - entity: light.hal_boven_wit
+      template: light
+      vars:
+        friendly_name: Hallway
+
+    - element: div
+      class: hide-small
+
+    - element: button
+      display: '<i class="fas fa-bed"></i> Night'
+      on:
+        click: "$ha.setAttributes('group.verlichting_kantoor', {color_temp: 350, brightness: 20})"
+
+    - element: button
+      display: '<i class="fas fa-moon"></i> Dim'
+      on:
+        click: "$ha.setAttributes('group.verlichting_kantoor', {color_temp: 350, brightness: 80})"
+
+    - element: button
+      display: '<i class="fas fa-sun"></i> Light'
+      on:
+        click: "$ha.setAttributes('group.verlichting_kantoor', {color_temp: 270, brightness: 200})"
+
+    - element: button
+      display: '<i class="fas fa-coffee"></i> Bright'
+      on:
+        click: "$ha.setAttributes('group.verlichting_kantoor', {color_temp: 250, brightness: 250})"
+
+    # Row 3
+
+    - entity: device_tracker.ben
+      class: image-tile
+      display: '{{pic attributes.entity_picture}}'
+    - entity: device_tracker.minerva
+      class: image-tile
+      display: '{{pic attributes.entity_picture}}'
+    - entity: device_tracker.feather
+      class: image-tile
+      display: '{{pic attributes.entity_picture}}'
+
+    - element: div
+      class: hide-small
+      style: 'grid-column: span 4'
+
+    #- element: button
+    #  display: '{{ua}}'
+    #  script: 'vars.ua = navigator.userAgent;'
+
+    - entity: light.kantoor
+      template: light
+      vars:
+          friendly_name: Kantoor
+
+- element: div
+  class: tiles
+  children:
+  - panel: demo
+    display: 'Demo'

@@ -1,0 +1,42 @@
+script: >
+  /*console.log(vars);*/
+---
+
+- element: div
+  class: tiles
+  children:
+    - entity: sensor.date
+      display: '{{custom}}'
+      script: >
+        var date = parseDate(vars.state);
+        vars.custom = replace(date.getDay(), {
+          1: "Monday",
+          2: "Tuesday",
+          3: "Wednesday",
+          4: "Thursday",
+          5: "Friday",
+          6: "Saturday",
+          7: "Sunday"
+        });
+    - entity: sun.sun
+      display: '{{custom}}'
+      script: >
+        vars.custom = replace(vars.state, {
+          "above_horizon": "Day",
+          "below_horizon": "Night"
+        });
+
+- element: div
+  class: tiles
+  children:
+    - entity: media_player.samsung_tv_remote
+
+- element: div
+  class: tiles
+  children:
+    - panel: main
+      display: Main
+    - panel: demo
+      display: Demo
+    - panel: grid
+      display: Grid test
