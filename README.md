@@ -1,4 +1,4 @@
-# HAUI
+# HADash
 
 A customizable Home Assistant dashboard.
 Work in progress.
@@ -44,7 +44,7 @@ that will be produced.
 Three types of elements can be defined:
 
 * `entity`: Elements that are linked to a single entity. Every time the state
-  of the element changes, its template is rendered and its dataset properties
+  of the entity changes, its template is rendered and its dataset properties
   are updated.
 
 * `panel`: Provides a button which can be used to load another panel.
