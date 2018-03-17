@@ -43,9 +43,10 @@ header {
 }
 
 .tiles {
+    margin: 4px 0;
+    justify-content: center;
     display: grid;
     grid-gap: 4px;
-    width: 396px;
     grid-template-columns: repeat(4, 96px);
     grid-auto-rows: 96px;
     font-size: 83%;
@@ -68,7 +69,6 @@ header {
 
 @media (min-width: 615px) {
     .tiles {
-        width: 615px;
         grid-template-columns: repeat(6, 100px);
         grid-auto-rows: 100px;
         font-size: 85%; }
@@ -80,7 +80,7 @@ header {
 
 @media (min-width: 818px) {
     .tiles {
-        width: 818px;
+        margin: 10px 0;
         grid-gap: 10px;
         grid-template-columns: repeat(6, 128px); grid-auto-rows: 128px;
         font-size: 100%; }
@@ -93,7 +93,6 @@ header {
 @media (min-width: 1024px) {
     .hide-small { display: block }
     .tiles {
-        width: 1024px;
         grid-gap: 8px;
         grid-auto-rows: 120px;
         grid-template-columns: repeat(8, 120px) }

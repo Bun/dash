@@ -1,35 +1,37 @@
 @charset "utf-8";
 
-/* VERY basic theme
+/* Basic theme inspider by the HA theme
  */
 
 html, body {
-    background-color: white;
+    background-color: #e5e5e5;
     color: black;
-    font-family: sans-serif;
+    font-family: Roboto, Noto, sans-serif;
 }
 
 .tiles > button {
-    background-color: #eee;
-    padding: 0 3px;
+    background-color: #fff;
+    padding: 0 5px;
+    border-radius: 2px;
+    box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 2px 0px,
+        rgba(0, 0, 0, 0.12) 0px 1px 5px 0px,
+        rgba(0, 0, 0, 0.2) 0px 3px 1px -2px;
 }
 
 header {
-    background-color: #ccc;
+    background-color: #03a9f4;
+    color: white;
     height: 39px;
+    padding: 0 32px;
+}
+
+header img {
+    max-height: 32px;
 }
 
 header > button {
     background: none;
     margin: 0 16px;
-}
-
-.tiles {
-    margin: 4px auto;
-}
-
-@media (min-width: 818px) {
-    .tiles { margin: 10px auto; }
 }
 
 .big { font-size: 120% }
@@ -42,6 +44,11 @@ header > button {
 
 .image-tile[data-state=not_home] img {
     filter: grayscale(95%)
+}
+
+[data-state=off] .state-text {
+    font-weight: bold;
+    color: silver
 }
 
 [data-state=on] .state-text {

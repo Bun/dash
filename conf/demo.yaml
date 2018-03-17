@@ -1,7 +1,7 @@
-script: >
-  /*console.log(vars);*/
+style: css/theme-dark.css
 ---
 
+# Customizing properties with scripts:
 - element: div
   class: tiles
   children:
@@ -26,6 +26,14 @@ script: >
           "below_horizon": "Night"
         });
 
+# State-text color example
+- element: div
+  class: tiles
+  children:
+    - entity: group.all_lights
+      display: 'Lights are <span class="state-text">{{state}}</span>'
+
+# Media controls: (TODO)
 - element: div
   class: tiles
   children:

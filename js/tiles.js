@@ -5,7 +5,6 @@
  */
 
 var R_TEMPLATE = /{{/;
-var rendered = null;
 
 var $scriptEval = (function() {
     // Helpers
@@ -27,19 +26,19 @@ var $scriptEval = (function() {
 })();
 
 function buildConfig(config) {
-    config.defaultElement = config.defaultElement || 'button';
-    config.defaultTemplate = config.defaultTemplate || '{{attributes.friendly_name}} {{state}}';
-    config.templates = config.templates || {};
+    function setDefault(key, value) {
+        if (config[key] === undefined)
+            config[key] = value;
+    }
+    setDefault('style', 'css/theme-white.css');
+    setDefault('defaultElement', 'button');
+    setDefault('defaultTemplate', '{{attributes.friendly_name}} {{state}}');
+    setDefault('templates', {});
     return config;
 }
 
-function renderTileScreen(config, docs) {
+function renderTileScreen(rendered, config, docs) {
     "use strict";
-
-    // Not here:
-    if (rendered !== null) {
-        rendered.remove();
-    }
 
     var activeHold = null;
     var endMouse = function(e) {
@@ -270,43 +269,55 @@ function renderTileScreen(config, docs) {
     }
 
     $ha.clearEvents();
-    rendered = document.createElement('div');
     for (let doc of docs) {
         recursiveRender(rendered, doc);
     }
-    document.body.appendChild(rendered);
 }
 
 var loadConfig = (function() {
     var pending = null,
         page = null,
         success = false;
+    var rendered = null;
+    var styler = document.getElementById('hadash-theme');
+    if (!styler) {
+        console.warn('Theming disabled because there is no stylesheet' +
+            ' element with ID hadash-theme');
+    }
 
     function loaded() {
         if (pending.readyState !== 4)
             return
-        if (pending.status === 200) {
-            success = true;
-            try {
-                var docs = jsyaml.safeLoadAll(this.responseText);
-                var config = buildConfig(docs.length > 1 ? docs.shift() : {});
-                renderTileScreen(config, docs);
-            } catch (e) {
-                var error = document.createElement('p');
-                error.style.background = '#cc0000';
-                error.style.color = 'white';
-                error.style.padding = '10px 15px';
-                error.style.margin = '10px 15px';
-                error.textContent = 'Error loading ' + page + ': ' + e;
-                if (rendered === null) {
-                    rendered = document.createElement('div');
-                    document.body.appendChild(rendered);
-                }
-                rendered.appendChild(error);
-                throw e;
-            }
-        } else {
+        if (pending.status !== 200) {
+            // TODO: show error
             console.log('Requesting config failed with code', pending.status);
+            return;
+        }
+        /* Render the current panel
+         */
+        success = true;
+        if (rendered !== null) {
+            rendered.remove();
+        }
+        rendered = document.createElement('div');
+        rendered.className = 'dash-container';
+        document.body.appendChild(rendered);
+        try {
+            var docs = jsyaml.safeLoadAll(this.responseText);
+            var config = buildConfig(docs.length > 1 ? docs.shift() : {});
+            if (styler && config.style) {
+                styler.href = config.style;
+            }
+            renderTileScreen(rendered, config, docs);
+        } catch (e) {
+            var error = document.createElement('p');
+            error.style.background = '#cc0000';
+            error.style.color = 'white';
+            error.style.padding = '10px 15px';
+            error.style.margin = '10px 15px';
+            error.textContent = 'Error loading ' + page + ': ' + e;
+            rendered.appendChild(error);
+            throw e;
         }
         pending = null;
         if (!success && page !== 'main') {

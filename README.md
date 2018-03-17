@@ -12,6 +12,7 @@ Features:
 
 TODO:
 
+* Allow template scripts as well
 * Multimedia buttons
 * Some cool graph stuff
 * Group entity rendering
@@ -100,7 +101,8 @@ Template render helpers:
 
 ### Global options
 
-You can include panel configuration options at the start of the YAML file.
+You can include panel configuration options as a doceumnt at the start of the
+YAML file.
 The configuration options consists of arbitrary key-value pairs, which you can
 also use in your own script snippets.
 
@@ -111,14 +113,25 @@ Annotated example:
     # Controls which element is used by default for e.g. entity tiles.
     defaultElement: tile
 
+    # Set the stylesheet for this panel
+    style: css/theme-dark.css
+
     # A script snippet that is executed before a template is rendered.
     script: |
         console.log("The following vars are available to me:", vars);
         vars.demo = "Hello world!";
 
+    # A reusable template
     template:
         mytemplate: |
             <p>The thing is currently {{state}}!
+
+    # You must include the following marker, to separate the options from the
+    # panel layout:
+
+    ---
+
+    # Panel document starts here
 
 
 ### Scripts

@@ -133,7 +133,7 @@ templates:
     - entity: light.kantoor
       template: light
       vars:
-          friendly_name: Kantoor
+        friendly_name: Kantoor
 
 - element: div
   class: tiles
