@@ -33,6 +33,18 @@ style: css/theme-dark.css
     - entity: group.all_lights
       display: 'Lights are <span class="state-text">{{state}}</span>'
 
+    - entity: group.all_automations
+      class: state-tile
+      display: 'Automations are <span class="state-text">{{state}}</span>'
+
+    - element: div
+
+    - entity: sensor.dark_sky_wind_bearing
+      display: |
+        <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+          <path d="M40,80 L50,20 L60,80 L50,65 Z" stroke="black" fill="brown" transform="rotate({{state}} 50 50)"/>
+        </svg>
+
 # Media controls: (TODO)
 - element: div
   class: tiles

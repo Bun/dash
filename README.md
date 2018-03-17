@@ -1,7 +1,7 @@
 # HADash
 
 A customizable Home Assistant dashboard.
-Work in progress.
+Work in progress, expect things to change and break.
 
 ![Screenshot](https://raw.githubusercontent.com/Bun/dash/assets/screenshots/simple-theme.png)
 
@@ -98,7 +98,6 @@ Template render helpers:
         {{/equals}}
 
 
-
 ### Global options
 
 You can include panel configuration options as a doceumnt at the start of the
@@ -162,7 +161,6 @@ Additionally, some helper functions are available in the script snippet:
 
         // E.g. for sensor.date
         vars.year = parseDate(vars.state).getFullYear();
-
 
 
 ## Dependencies

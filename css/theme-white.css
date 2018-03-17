@@ -46,6 +46,12 @@ header > button {
     filter: grayscale(95%)
 }
 
+
+.state-tile[data-state=off] {
+    color: silver;
+}
+
+
 [data-state=off] .state-text {
     font-weight: bold;
     color: silver
@@ -55,6 +61,7 @@ header > button {
     font-weight: bold;
     color: green
 }
+
 
 
 /* Place the control buttons the way I want them
