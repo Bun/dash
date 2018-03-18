@@ -5,12 +5,16 @@ script: |
   }
 
 templates:
-  light: |
-    <div class="light-control">
-      <button class="attr-btn" data-attr="brightness" data-incr="10">+</button>
-      <button class="control-text">{{friendly_name}}</button>
-      <button class="attr-btn" data-attr="brightness" data-incr="-10">-</button>
-    </div>
+  light:
+    class: state-tile
+    script: |
+      vars.friendly_name = vars.friendly_name || vars.attributes.friendly_name;
+    display: |
+      <div class="light-control">
+        <button class="attr-btn" data-attr="brightness" data-incr="10">+</button>
+        <button class="control-text">{{friendly_name}}</button>
+        <button class="attr-btn" data-attr="brightness" data-incr="-10">-</button>
+      </div>
 
 ---
 - element: header
@@ -84,8 +88,6 @@ templates:
 
     - entity: light.hal_boven_wit
       template: light
-      vars:
-        friendly_name: Hallway
 
     - element: div
       class: hide-small
@@ -126,14 +128,8 @@ templates:
       class: hide-small
       style: 'grid-column: span 4'
 
-    #- element: button
-    #  display: '{{ua}}'
-    #  script: 'vars.ua = navigator.userAgent;'
-
     - entity: light.kantoor
       template: light
-      vars:
-        friendly_name: Kantoor
 
 - element: div
   class: tiles

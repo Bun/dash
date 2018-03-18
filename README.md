@@ -12,7 +12,7 @@ Features:
 
 TODO:
 
-* Allow template scripts as well
+* Allow script to change properties
 * Multimedia buttons
 * Some cool graph stuff
 * Group entity rendering

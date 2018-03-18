@@ -162,10 +162,26 @@ function renderTileScreen(rendered, config, docs) {
         return new Handlebars.SafeString('<img src="' + url + '">');
     });
 
+    function renderTemplate(elem, view, template, script) {
+        try {
+            if (config.script) {
+                $scriptEval(config.script, config, view);
+            }
+            if (script) {
+                $scriptEval(script, config, view);
+            }
+            if (template instanceof Function)
+                elem.innerHTML = template(view);
+            else if (template !== undefined)
+                elem.innerHTML = template;
+        } catch (e) {
+            console.error(e);
+            elem.textContent = e;
+        }
+    }
+
     function setupEntityRender(req, elem, display, template) {
         var eid = req.entity;
-        var template = Handlebars.compile(template);
-        //var sc = smartControls(eid, elem);
         var renderFunc = function(eid, val) {
             var view = {};
             for (var k in val)
@@ -176,21 +192,7 @@ function renderTileScreen(rendered, config, docs) {
             }
             elem.dataset.state = val.state;
             elem.title = eid.replace(/.+\./, '') + ': ' + val.state;
-            try {
-                if (config.script) {
-                    $scriptEval(config.script, config, view);
-                }
-                if (req.script) {
-                    $scriptEval(req.script, config, view);
-                }
-                display.innerHTML = template(view);
-            } catch (e) {
-                console.error(e);
-                display.textContent = e;
-            }
-            //if (sc) {
-            //    sc(val);
-            //}
+            renderTemplate(display, view, template, req.script);
         };
         $ha.addEvent(eid, renderFunc);
         if ($ha.entities[eid] !== undefined && $ha.entities[eid].state !== undefined) {
@@ -198,6 +200,8 @@ function renderTileScreen(rendered, config, docs) {
         }
     }
 
+    // TODO: allow properties to be merged (template and entity), and
+    // scriptable
     function setProperties(elem, props) {
         var propnames = ['class', 'style', 'title'];
         for (let name of propnames) {
@@ -216,44 +220,50 @@ function renderTileScreen(rendered, config, docs) {
         for (let req of elements) {
             let tagName = req.element !== undefined ? req.element : config.defaultElement;
             let elem = document.createElement(tagName);
-            let display;
-            let tmpl;
+            let displayElem;
+            let template = config.templates[req.template] || {};
 
-            if (req.template) {
-                tmpl = config.templates[req.template];
-            } else {
-                tmpl = req.display;
+            if (!template instanceof Object)
+                template = {display: template};
+
+            let display = req.display || template.display;
+            if (req.entity !== undefined && display === undefined) {
+                display = config.defaultTemplate;
             }
 
-            if (req.entity !== undefined && tmpl === undefined) {
-                tmpl = config.defaultTemplate;
-            }
+            let script = req.script || template.script;
+            const hasTemplate = display && display.match(R_TEMPLATE);
 
-            if (req.children && tmpl && tmpl.match(R_TEMPLATE)) {
+            if (req.children && hasTemplate) {
                 // Dumping the display text into its own element is the easiest
                 // way of dealing with re-rendering.  Not likely to happen
                 // anyway.
-                display = document.createElement('display');
-                elem.appendChild(display);
+                displayElem = document.createElement('display');
+                elem.appendChild(displayElem);
             } else {
-                display = elem;
+                displayElem = elem;
             }
+
+            setProperties(elem, template);
             setProperties(elem, req);
+            if (hasTemplate)
+                display = Handlebars.compile(display);
+
+            if (req.entity === undefined || !hasTemplate)
+                renderTemplate(displayElem, {}, display, req.script);
 
             if (req.entity !== undefined) {
+                var patched = {entity: req.entity};
+                patched.script = (template.script || '') + (req.script || '');
+                patched.vars = req.vars || template.vars; // TODO: merge
                 elem.dataset.entity = req.entity;
                 setupButtonClicker(req, elem);
-                setupEntityRender(req, elem, display, tmpl);
+                setupEntityRender(patched, elem, displayElem, display);
             }
 
             if (req.panel !== undefined) {
                 // Panel switcher
-                display.innerHTML = req.display || '';
                 setupPanelSwitch(req.panel, elem);
-            } else if (tmpl !== undefined && !tmpl.match(R_TEMPLATE)) {
-                // TODO: render pass for non-entity templates, in case they
-                // have a script.
-                display.innerHTML = tmpl;
             }
 
             if (req.children !== undefined) {

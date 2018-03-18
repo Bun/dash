@@ -7,24 +7,32 @@ style: css/theme-dark.css
   children:
     - entity: sensor.date
       display: '{{custom}}'
-      script: >
+      script: |
         var date = parseDate(vars.state);
         vars.custom = replace(date.getDay(), {
+          0: "Sunday",
           1: "Monday",
           2: "Tuesday",
           3: "Wednesday",
           4: "Thursday",
           5: "Friday",
-          6: "Saturday",
-          7: "Sunday"
+          6: "Saturday"
         });
     - entity: sun.sun
       display: '{{custom}}'
-      script: >
+      script: |
         vars.custom = replace(vars.state, {
           "above_horizon": "Day",
           "below_horizon": "Night"
         });
+
+    # Rendered once
+    - element: button
+      display: '{{ua}}'
+      style: 'font-size: 11px'
+      script: |
+        vars.ua = navigator.userAgent;
+
 
 # State-text color example
 - element: div
@@ -40,9 +48,11 @@ style: css/theme-dark.css
     - element: div
 
     - entity: sensor.dark_sky_wind_bearing
+      script: |
+        vars.rotation = -vars.state || 0;
       display: |
         <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-          <path d="M40,80 L50,20 L60,80 L50,65 Z" stroke="black" fill="brown" transform="rotate({{state}} 50 50)"/>
+          <path d="M40,80 L50,20 L60,80 L50,65 Z" stroke="black" fill="brown" transform="rotate({{rotation}} 50 50)"/>
         </svg>
 
 # Media controls: (TODO)
