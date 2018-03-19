@@ -4,8 +4,6 @@
  * MIT license.
  */
 
-var R_TEMPLATE = /{{/;
-
 var $scriptEval = (function() {
     // Helpers
     function parseDate(date) {
@@ -19,6 +17,9 @@ var $scriptEval = (function() {
             return key;
         return value;
     };
+
+    // TODO:
+    // - Percentage computation for brightness, color temperature
 
     return function(script, config, vars) {
         eval(script);
@@ -39,6 +40,7 @@ function buildConfig(config) {
 
 function renderTileScreen(rendered, config, docs) {
     "use strict";
+    var R_TEMPLATE = /{/;
 
     var activeHold = null;
     var endMouse = function(e) {
@@ -295,23 +297,51 @@ var loadConfig = (function() {
             ' element with ID hadash-theme');
     }
 
-    function loaded() {
-        if (pending.readyState !== 4)
-            return
-        if (pending.status !== 200) {
-            // TODO: show error
-            console.log('Requesting config failed with code', pending.status);
-            return;
-        }
-        /* Render the current panel
-         */
-        success = true;
+    function createContainer(remove) {
         if (rendered !== null) {
+            if (!remove)
+                return;
             rendered.remove();
         }
         rendered = document.createElement('div');
         rendered.className = 'dash-container';
         document.body.appendChild(rendered);
+    }
+
+    function renderError(text) {
+        createContainer(false);
+        var error = document.createElement('p');
+        error.style.background = '#cc0000';
+        error.style.color = 'white';
+        error.style.padding = '10px 15px';
+        error.style.margin = '10px 15px';
+        error.textContent = text;
+        rendered.appendChild(error);
+    }
+
+    function loaded() {
+        if (pending.readyState !== 4)
+            return
+        if (pending.status !== 200) {
+            // TODO: show error
+            switch (pending.status) {
+                case 404:
+                    return renderError('The panel file "conf/' + page + '.yaml" does not exist.');
+                case 403:
+                    return renderError('Access to panel file "conf/' + page + '.yaml" was denied (check permissions)');
+                default:
+                    return renderError('Requesting config failed with HTTP code ' + pending.status);
+            }
+        }
+        if (this.responseText.replace(/\W+/g, '') === '') {
+            // Just a hint to the user... if you really want an empty panel
+            // file, just add a comment
+            return renderError('Panel file "conf/' + page + '.yaml" is empty');
+        }
+        /* Render the current panel
+         */
+        success = true;
+        createContainer(true);
         try {
             var docs = jsyaml.safeLoadAll(this.responseText);
             var config = buildConfig(docs.length > 1 ? docs.shift() : {});
@@ -320,13 +350,7 @@ var loadConfig = (function() {
             }
             renderTileScreen(rendered, config, docs);
         } catch (e) {
-            var error = document.createElement('p');
-            error.style.background = '#cc0000';
-            error.style.color = 'white';
-            error.style.padding = '10px 15px';
-            error.style.margin = '10px 15px';
-            error.textContent = 'Error loading ' + page + ': ' + e;
-            rendered.appendChild(error);
+            renderError('Error loading ' + page + ': ' + e);
             throw e;
         }
         pending = null;

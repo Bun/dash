@@ -5,10 +5,12 @@ Work in progress, expect things to change and break.
 
 ![Screenshot](https://raw.githubusercontent.com/Bun/dash/assets/screenshots/simple-theme.png)
 
-Features:
+While the default theme features a grid of clickable tiles,
+the panel markup enables you to freely create arbitrary HTML + CSS + SVG
+layouts.
+Assign entities to elements and automatically update them when the state of
+the entity changes!
 
-* Clickable tile-buttons
-* Tile contents with support for templating
 
 TODO:
 
@@ -32,8 +34,17 @@ at `https://home-assistant:8123/local/dash/index.html` -- of course, replace
 the hostname and port depending on your setup.
 
 You are now ready to modify and create your panels!
+Panels must be placed in the `conf` directory.
+To get started, copy `example.yaml` to `main.yaml` and edit away.
 
 TODO: add support for other setups (not very difficult!)
+
+
+Caveat: Home Assistant installs a "service worker" that enables HA to load
+even when you are offline.
+This service worker also implements some rather aggressive caching behavior.
+If you are editing panels and styles and changes are not
+immediately reflected, try refreshing again to force a reload.
 
 
 ## Configuration
@@ -73,7 +84,7 @@ Every element can also include any of the following properties:
 
 
 
-### Templates
+### Display templates
 
 The following variables provided by Home Assistant can be used:
 
