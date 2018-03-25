@@ -20,6 +20,14 @@ TODO:
 * Group entity rendering
 * Support "element: button.tile"
 
+* Properties on `<body>` are ignored. The elements in the `<body>` HTML are
+  copied into a div with class `dash-container`.
+
+* The old YAML-based markup allowed scriptable templates on elements that
+  weren't tied to an entity. Restore this functionality.
+
+* Allow scripts to be execute at start-up / panel unload.
+
 
 ## Installation
 
@@ -35,10 +43,9 @@ the hostname and port depending on your setup.
 
 You are now ready to modify and create your panels!
 Panels must be placed in the `conf` directory.
-To get started, copy `example.yaml` to `main.yaml` and edit away.
+To get started, copy `example.html` to `main.html` and edit away.
 
 TODO: add support for other setups (not very difficult!)
-
 
 Caveat: Home Assistant installs a "service worker" that enables HA to load
 even when you are offline.
@@ -49,50 +56,48 @@ immediately reflected, try refreshing again to force a reload.
 
 ## Configuration
 
-A dashboard panel consists of a YAML-based configuration file located in the
-`conf` directory. The default file is called `main.yaml`.
-The panel is defined as a tree of elements that closely reflects the HTML
-that will be produced.
+A dashboard panel is defined as an HTML-like page located in the `conf`
+directory.  The default panel is called `main.html`.
+The HTML syntax has the following properties:
 
-Three types of elements can be defined:
+* Elements defined in the `<head>` section of the panel will be copied to the
+  page as-is. You can use this to include custom stylesheets.
 
-* `entity`: Elements that are linked to a single entity. Every time the state
-  of the entity changes, its template is rendered and its dataset properties
-  are updated.
+* The panel definition goes in the `<body>` section.
+  Elements that have the `dash-entity` attribute will be (re)rendered every
+  time Home Assistant updates the element state/attributes.
 
-* `panel`: Provides a button which can be used to load another panel.
+* Templates can be created by creating `<dash-template>` elements in `<head>`.
+  This way you only have to define repetative code once.
+  The template must have an attribute `dash-template-id` that defines its name.
+  Refer to the template by setting the `dash-template` attribute on an entity
+  element.
 
-* `element`: generic elements, used to build the structure of the document.
-  These elements do not have an entity associated with them and will never be
-  updated.
-  Note that defining the `element` property for a panel or entity element
-  overrides their default element type.
+* If an element has the `dash-panel` attribute, clicking on that element will
+  load the panel that was specified.
 
-Every element can also include any of the following properties:
-
-* `element`: controls the element tag name
-* `display`: defines the template for how the text of the element itself is
-  rendered
-* `template`: select a template (alternative to `display`)
-* `vars`: additional static variables to be used in a script or template
-* `children`: a list of elements rendered as children of this element
-* `class`: sets the class attribute
-* `style`: sets the style attribute
-* `title`: sets the title attribute
-* `dataset`: each key-value pair defined under dataset will be defined as
-  dataset attribute
+* You can use arbitrary HTML elements, with the exception of `<script>`
+  elements.
+  Scripts that are defined in the `<head>` section will be evaluated before
+  *any* template is rendered.
+  If a script is defined within an element that has the `dash-entity`
+  attribute, it will be evaluated only for that template.
 
 
+### Template syntax
 
-### Display templates
-
-The following variables provided by Home Assistant can be used:
+HADash supports Handlebars templates for entity elements.
+The following variables provided by Home Assistant can be used
+in these templates:
 
 * `entity_id`
 * `state`
 * `attributes`
 
-Template render helpers:
+In addition, all the dataset attributes (`data-*`) of the entity element
+are also made available.
+
+Some template render helpers are also defined:
 
 * `{{pic IMG}}`: used to render entity images (using
   `attributes.entity_picture`)
@@ -109,41 +114,6 @@ Template render helpers:
         {{/equals}}
 
 
-### Global options
-
-You can include panel configuration options as a doceumnt at the start of the
-YAML file.
-The configuration options consists of arbitrary key-value pairs, which you can
-also use in your own script snippets.
-
-Annotated example:
-
-    # Panel configuration
-
-    # Controls which element is used by default for e.g. entity tiles.
-    defaultElement: tile
-
-    # Set the stylesheet for this panel
-    style: css/theme-dark.css
-
-    # A script snippet that is executed before a template is rendered.
-    script: |
-        console.log("The following vars are available to me:", vars);
-        vars.demo = "Hello world!";
-
-    # A reusable template
-    template:
-        mytemplate: |
-            <p>The thing is currently {{state}}!
-
-    # You must include the following marker, to separate the options from the
-    # panel layout:
-
-    ---
-
-    # Panel document starts here
-
-
 ### Scripts
 
 Script snippets allow you to arbitrarily modify the values provided by Home
@@ -151,8 +121,8 @@ Assistant. This can be used to e.g. translate state or attribute values, parse
 dates, and so on.
 All the variables that can be used in templates can be accessed by script
 snippets as well.
-Variables stored in the `vars` object can then be referenced in the template
-used in the display.
+These variables are stored in the `vars` object and any modifications made
+can then be referenced in the template used to render the final HTML.
 
 Additionally, some helper functions are available in the script snippet:
 
@@ -175,9 +145,6 @@ Additionally, some helper functions are available in the script snippet:
 
 
 ## Dependencies
-
-* The configuration is written in YAML, which requires
-  [js-yaml](https://github.com/nodeca/js-yaml)
 
 * Templates are written using [handlebars](https://handlebarsjs.com/)
 

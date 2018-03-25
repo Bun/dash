@@ -4,8 +4,9 @@
  * MIT license.
  */
 
+/* Evaluate user scripts with some helper functions
+ */
 var $scriptEval = (function() {
-    // Helpers
     function parseDate(date) {
         // MUST be YYYY-MM-DD
         return new Date(String(date));
@@ -26,111 +27,10 @@ var $scriptEval = (function() {
     };
 })();
 
-function buildConfig(config) {
-    function setDefault(key, value) {
-        if (config[key] === undefined)
-            config[key] = value;
-    }
-    setDefault('style', 'css/theme-white.css');
-    setDefault('defaultElement', 'button');
-    setDefault('defaultTemplate', '{{attributes.friendly_name}} {{state}}');
-    setDefault('templates', {});
-    return config;
-}
-
-function renderTileScreen(rendered, config, docs) {
-    "use strict";
-    var R_TEMPLATE = /{/;
-
-    var activeHold = null;
-    var endMouse = function(e) {
-        if (activeHold) {
-            console.log('cancel input', e.type);
-            activeHold(e);
-            activeHold = null;
-        }
-    };
-    document.body.addEventListener('mouseup', endMouse);
-    document.body.addEventListener('mouseleave', endMouse);
-
-    function setupButtonClicker(req, elem) {
-        var cval, ival, called, incr, attr;
-        var once = function() {
-            called = true;
-            cval += incr;
-            var attrs = {};
-            attrs[attr] = cval;
-            $ha.setAttributes(req.entity, attrs);
-        };
-        var release = function() {
-            clearInterval(ival);
-            if (!called) { incr = incr * 2.5; once(); }
-        };
-        var cancelClick = false;
-        function attributeClick(e) {
-            e.preventDefault();
-            if (activeHold) return;
-            if (!e.target.classList.contains('attr-btn')) {
-                cancelClick = false;
-                return;
-            }
-            cancelClick = true;
-            attr = e.target.dataset.attr;
-            console.log('Clicked attribute', req.entity, attr);
-            called = false;
-            incr = +e.target.dataset.incr;
-            cval = $ha.getAttribute(req.entity, attr);
-            ival = setInterval(once, 400);
-            activeHold = release;
-        }
-        function buttonClick(e) {
-            var state = $ha.entities[req.entity].state;
-            console.log('Clicked', req.entity,
-                'current state:', state, 'cancel:', cancelClick);
-            if (cancelClick)
-                return;
-            if (state === 'on') {
-                $ha.setState(req.entity, 'off');
-            } else if (state === 'off') {
-                $ha.setState(req.entity, 'on');
-            }
-        }
-        elem.addEventListener('click', buttonClick);
-        elem.addEventListener('mousedown', attributeClick);
-    }
-
-    function setupPanelSwitch(panel, elem) {
-        elem.addEventListener('click', function() {
-            loadConfig(panel);
-        });
-    }
-
-    function smartControls(eid, elem) {
-        return;
-        if (eid.startsWith('light.')) {
-            elem.classList.add('smart-light');
-            console.log('Auto-setup light', eid);
-            let minus = document.createElement('button');
-            minus.className = 'attr-btn';
-            minus.textContent = '-';
-            attributeButton(minus, eid, 'brightness', -10, -25);
-            let plus = document.createElement('button');
-            plus.className = 'attr-btn';
-            plus.textContent = '+';
-            attributeButton(plus, eid, 'brightness', 10, 25);
-            elem.insertBefore(plus, elem.firstChild);
-            elem.appendChild(minus);
-            return function(val) {
-                if (val.state !== 'on') {
-                    //
-                } else {
-                    //let pct = ((100 * val.attributes.brightness) / 255) | 0;
-                    //value.textContent = pct + '%';
-                }
-            };
-        }
-    }
-
+/* Render a user template with some
+ */
+var $renderTemplate = (function() {
+    // Simple if/else logic
     Handlebars.registerHelper('equals', function(a, b, options) {
         if (a == b) {
             return options.fn(this);
@@ -139,6 +39,7 @@ function renderTileScreen(rendered, config, docs) {
     });
 
     // Must be YYYY-MM-DD format
+    // TODO: remove
     Handlebars.registerHelper('date', function(date, format) {
         var m = String(date).match(/^(\d\d\d\d)-(\d\d)-(\d\d)$/);
         if (m === null) {
@@ -157,6 +58,7 @@ function renderTileScreen(rendered, config, docs) {
         });
     });
 
+    // Render a picture, to be used with `attributes.entity_picture`
     Handlebars.registerHelper('pic', function(path) {
         if (!path)
             return '';
@@ -164,14 +66,10 @@ function renderTileScreen(rendered, config, docs) {
         return new Handlebars.SafeString('<img src="' + url + '">');
     });
 
-    function renderTemplate(elem, view, template, script) {
+    return function(config, elem, view, template, script) {
+        script = (config.script || '') + script;
         try {
-            if (config.script) {
-                $scriptEval(config.script, config, view);
-            }
-            if (script) {
-                $scriptEval(script, config, view);
-            }
+            $scriptEval(script, config, view);
             if (template instanceof Function)
                 elem.innerHTML = template(view);
             else if (template !== undefined)
@@ -180,127 +78,218 @@ function renderTileScreen(rendered, config, docs) {
             console.error(e);
             elem.textContent = e;
         }
-    }
+    };
+})();
 
-    function setupEntityRender(req, elem, display, template) {
+/* Render a template based on an entity and its state/attributes
+ */
+function $entityTemplateRender(config, req, elem, display) {
         var eid = req.entity;
         var renderFunc = function(eid, val) {
             var view = {};
             for (var k in val)
                 view[k] = val[k];
+            // Attribute `data-foo-bar` is turned into `fooBar`
+            for (let k in elem.dataset) {
+                let name = k.replace(/[A-Z]/g, (m) => '_' + m[0].toLowerCase());
+                view[name] = elem.dataset[k];
+            }
             if (req.vars) {
                 for (var k in req.vars)
                     view[k] = req.vars[k];
             }
             elem.dataset.state = val.state;
             elem.title = eid.replace(/.+\./, '') + ': ' + val.state;
-            renderTemplate(display, view, template, req.script);
+            $renderTemplate(config, display, view, req.display, req.script);
         };
         $ha.addEvent(eid, renderFunc);
         if ($ha.entities[eid] !== undefined && $ha.entities[eid].state !== undefined) {
             renderFunc(eid, $ha.entities[eid]);
         }
-    }
-
-    // TODO: allow properties to be merged (template and entity), and
-    // scriptable
-    function setProperties(elem, props) {
-        var propnames = ['class', 'style', 'title'];
-        for (let name of propnames) {
-            if (props[name] !== undefined) {
-                elem.setAttribute(name, props[name]);
-            }
-        }
-        if (props.dataset !== undefined) {
-            for (let k in props.dataset) {
-                elem.dataset[k] = props.dataset[k]
-            }
-        }
-    }
-
-    function recursiveRender(root, elements) {
-        for (let req of elements) {
-            let tagName = req.element !== undefined ? req.element : config.defaultElement;
-            let elem = document.createElement(tagName);
-            let displayElem;
-            let template = config.templates[req.template] || {};
-
-            if (!template instanceof Object)
-                template = {display: template};
-
-            let display = req.display || template.display;
-            if (req.entity !== undefined && display === undefined) {
-                display = config.defaultTemplate;
-            }
-
-            let script = req.script || template.script;
-            const hasTemplate = display && display.match(R_TEMPLATE);
-
-            if (req.children && hasTemplate) {
-                // Dumping the display text into its own element is the easiest
-                // way of dealing with re-rendering.  Not likely to happen
-                // anyway.
-                displayElem = document.createElement('display');
-                elem.appendChild(displayElem);
-            } else {
-                displayElem = elem;
-            }
-
-            setProperties(elem, template);
-            setProperties(elem, req);
-            if (hasTemplate)
-                display = Handlebars.compile(display);
-
-            if (req.entity === undefined || !hasTemplate)
-                renderTemplate(displayElem, {}, display, req.script);
-
-            if (req.entity !== undefined) {
-                var patched = {entity: req.entity};
-                patched.script = (template.script || '') + (req.script || '');
-                patched.vars = req.vars || template.vars; // TODO: merge
-                elem.dataset.entity = req.entity;
-                setupButtonClicker(req, elem);
-                setupEntityRender(patched, elem, displayElem, display);
-            }
-
-            if (req.panel !== undefined) {
-                // Panel switcher
-                setupPanelSwitch(req.panel, elem);
-            }
-
-            if (req.children !== undefined) {
-                recursiveRender(elem, req.children);
-            }
-
-            if (req.on !== undefined && req.on.click !== undefined) {
-                // Fun times
-                elem.setAttribute('onclick', req.on.click);
-            }
-            root.appendChild(elem);
-        }
-    }
-
-    $ha.clearEvents();
-    for (let doc of docs) {
-        recursiveRender(rendered, doc);
-    }
 }
 
-var loadConfig = (function() {
+/* Parse an HTML panel
+ */
+var $parseTemplate = function(container, text) {
+    var config = {};
+
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(text, 'text/html');
+    // These elements are added to <head> and should be removed
+    var removeMe = [];
+
+    var docHead = document.querySelector('head');
+    var head = doc.querySelector('head');
+    config.script = extractScripts(head);
+    while (head.children.length > 0) {
+        let c = head.children[0];
+        c.remove();
+        removeMe.push(c);
+        docHead.appendChild(c);
+    }
+
+    function extractScripts(e) {
+        let scripts = e.querySelectorAll('script');
+        let script = '';
+        for (let s of scripts) {
+            script += s.innerHTML;
+            s.remove();
+        }
+        return script;
+    }
+
+    function extractAttributes(elem) {
+        let attr = {};
+        for (let i = 0; i < elem.attributes.length; i++) {
+            let a = elem.attributes[i];
+            attr[a.name] = a.value;
+        }
+        return attr;
+    }
+
+    let templates = {};
+    for (let t of doc.querySelectorAll('dash-template')) {
+        t.remove();
+        let script = extractScripts(t);
+        let attr = extractAttributes(t);
+        templates[t.getAttribute('dash-template-id')] = {
+            display: t.innerHTML,
+            script: script,
+            attributes: attr
+        };
+    }
+
+    // TODO: complain about unexpected stuff in head
+    // TODO: test how this breaks if you add an entity to an entity
+
+    // TODO: for now body should not have attributes, in the future copy them
+    // to their container
+    var body = doc.querySelector('body');
+    body.remove();
+    var entities = body.querySelectorAll('[dash-entity]');
+    for (let i = 0; i < entities.length; i++) {
+        const e = entities[i];
+        const script = extractScripts(e);
+        const template = templates[e.getAttribute('dash-template')] || {};
+
+        // TODO: we may want to merge certain attributes, such as class; for
+        // now we only set them if they weren't set already
+        const attr = template.attributes || {};
+        for (let k in attr) {
+            if (e.getAttribute(k) === null) {
+                e.setAttribute(k, attr[k]);
+            }
+        }
+
+        // Trickery...
+        const display = e.innerHTML + (template.display || '');
+        const req = {
+            entity: e.getAttribute('dash-entity'),
+            _display: display,
+            display: Handlebars.compile(display),
+            script: (template.script || '') + script
+        };
+
+        e.innerHTML = '';
+        $entityTemplateRender(config, req, e, e);
+        $entityClicked(req.entity, e);
+    }
+
+    // TODO: Remove and warn about remaining incorrectly placed scripts
+
+    for (let p of body.querySelectorAll('[dash-panel]')) {
+        let panel = p.getAttribute('dash-panel');
+        p.addEventListener('click', function() {
+            $loadPanel(panel);
+        });
+    }
+
+    while (body.children.length > 0) {
+        let c = body.children[0];
+        c.remove();
+        container.appendChild(c);
+    }
+
+    return removeMe;
+};
+
+var $entityClicked = (function() {
+    // Global mouse (de)press handler that can be used to abort a click event
+    var activeHold = null;
+    var endMouse = function(e) {
+        if (activeHold) {
+            console.log('cancel input', e.type);
+            activeHold(e);
+            activeHold = null;
+        }
+    };
+    document.body.addEventListener('mouseup', endMouse);
+    document.body.addEventListener('mouseleave', endMouse);
+
+    return function(entity, elem) {
+        var cval, ival, called, incr, attr;
+        var once = function() {
+            called = true;
+            cval += incr;
+            var attrs = {};
+            attrs[attr] = cval;
+            $ha.setAttributes(entity, attrs);
+        };
+        var release = function() {
+            clearInterval(ival);
+            if (!called) { incr = incr * 2.5; once(); }
+        };
+        var cancelClick = false;
+        function attributeClick(e) {
+            e.preventDefault();
+            if (activeHold) return;
+            if (!e.target.classList.contains('attr-btn')) {
+                cancelClick = false;
+                return;
+            }
+            cancelClick = true;
+            attr = e.target.dataset.attr;
+            console.log('Clicked attribute', entity, attr);
+            called = false;
+            incr = +e.target.dataset.incr;
+            cval = $ha.getAttribute(entity, attr);
+            ival = setInterval(once, 400);
+            activeHold = release;
+        }
+        function buttonClick(e) {
+            var state = $ha.entities[entity].state;
+            console.log('Clicked', entity,
+                'current state:', state, 'cancel:', cancelClick);
+            if (cancelClick)
+                return;
+            if (state === 'on') {
+                $ha.setState(entity, 'off');
+            } else if (state === 'off') {
+                $ha.setState(entity, 'on');
+            }
+        }
+        elem.addEventListener('click', buttonClick);
+        elem.addEventListener('mousedown', attributeClick);
+    };
+})();
+
+/* Loads a panel configuration file
+ */
+var $loadPanel = (function() {
     var pending = null,
         page = null,
-        success = false;
+        toRemove = null;
     var rendered = null;
-    var styler = document.getElementById('hadash-theme');
-    if (!styler) {
-        console.warn('Theming disabled because there is no stylesheet' +
-            ' element with ID hadash-theme');
-    }
 
     function createContainer(remove) {
         if (rendered !== null) {
             if (!remove)
                 return;
+            if (toRemove) {
+                for (let e of toRemove) {
+                    e.remove();
+                }
+            }
             rendered.remove();
         }
         rendered = document.createElement('div');
@@ -315,6 +304,7 @@ var loadConfig = (function() {
         error.style.color = 'white';
         error.style.padding = '10px 15px';
         error.style.margin = '10px 15px';
+        error.setAttribute('onclick', '$loadPanel("main")');
         error.textContent = text;
         rendered.appendChild(error);
     }
@@ -322,45 +312,39 @@ var loadConfig = (function() {
     function loaded() {
         if (pending.readyState !== 4)
             return
-        if (pending.status !== 200) {
+        const status = pending.status;
+        pending = null;
+        if (status !== 200) {
             // TODO: show error
-            switch (pending.status) {
+            switch (status) {
                 case 404:
-                    return renderError('The panel file "conf/' + page + '.yaml" does not exist.');
+                    return renderError('The panel file "conf/' + page + '.html" does not exist');
                 case 403:
-                    return renderError('Access to panel file "conf/' + page + '.yaml" was denied (check permissions)');
+                    return renderError('Access to panel file "conf/' + page + '.html" was denied (check permissions)');
                 default:
-                    return renderError('Requesting config failed with HTTP code ' + pending.status);
+                    return renderError('Requesting config failed with HTTP code ' + status);
             }
         }
         if (this.responseText.replace(/\W+/g, '') === '') {
             // Just a hint to the user... if you really want an empty panel
             // file, just add a comment
-            return renderError('Panel file "conf/' + page + '.yaml" is empty');
+            return renderError('Panel file "conf/' + page + '.html" is empty');
         }
         /* Render the current panel
          */
-        success = true;
         createContainer(true);
         try {
-            var docs = jsyaml.safeLoadAll(this.responseText);
-            var config = buildConfig(docs.length > 1 ? docs.shift() : {});
-            if (styler && config.style) {
-                styler.href = config.style;
-            }
-            renderTileScreen(rendered, config, docs);
+            toRemove = $parseTemplate(rendered, this.responseText);
         } catch (e) {
             renderError('Error loading ' + page + ': ' + e);
             throw e;
         }
-        pending = null;
-        if (!success && page !== 'main') {
-            loadConfig('main');
-        }
     }
 
-    return function loadConfig(panel) {
-        let fname = 'conf/' + panel + '.yaml';
+    return function(panel) {
+        let fname = 'conf/' + panel + '.html';
+        if (panel === 'example')
+            fname = 'conf/' + panel + '.html';
         console.log('Panel request:', fname);
         if (pending !== null) {
             // TODO: deffo cancel if same fname was requested too quickly
@@ -377,23 +361,17 @@ var loadConfig = (function() {
 
         page = panel;
         pending = new XMLHttpRequest();
-
         pending.addEventListener('load', loaded);
         pending.open('GET', fname);
-        pending.setRequestHeader('cache-control', 'no-cache, must-revalidate, post-check=0, pre-check=0');
-        pending.setRequestHeader('cache-control', 'max-age=0');
-        pending.setRequestHeader('expires', '0');
-        pending.setRequestHeader('expires', 'Tue, 01 Jan 1980 1:00:00 GMT');
-        pending.setRequestHeader('pragma', 'no-cache');
         pending.send();
     };
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
     if (location.hash !== '') {
-        loadConfig(location.hash.replace(/^#/, ''));
+        $loadPanel(location.hash.replace(/^#/, ''));
     } else {
-        loadConfig('main');
+        $loadPanel('main');
     }
     $ha.connect();
 });

@@ -43,13 +43,14 @@ header {
 }
 
 .tiles {
-    margin: 4px 0;
+    max-width: 1024px;
+    padding: 0 4px;
+    margin: 4px auto;
     justify-content: center;
     display: grid;
-    grid-gap: 4px;
-    grid-template-columns: repeat(4, 96px);
-    grid-auto-rows: 96px;
-    font-size: 83%;
+    grid-auto-rows: 114px;
+    grid-gap: 5px;
+    grid-template-columns: repeat(auto-fit, minmax(111px, 1fr));
 }
 
 .image-tile img {
@@ -58,6 +59,9 @@ header {
 }
 
 .hide-small { display: none }
+@media (min-width: 1024px) {
+    .hide-small { display: block }
+}
 
 /* Targets
  *
@@ -67,6 +71,7 @@ header {
  * Tablet       1024    600
  */
 
+/*
 @media (min-width: 615px) {
     .tiles {
         grid-template-columns: repeat(6, 100px);
@@ -97,6 +102,7 @@ header {
         grid-auto-rows: 120px;
         grid-template-columns: repeat(8, 120px) }
 }
+*/
 
 /* Span */
 .tiles .wide { grid-column: span 2 }

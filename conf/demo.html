@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="css/ha.css" type="text/css">
+    <link rel="stylesheet" href="css/theme-dark.css" type="text/css">
+</head>
+<body>
+
+<!-- Customizing properties with scripts: -->
+
+<div class="tiles">
+    <button dash-entity="sensor.date">
+        {{custom}}
+        <script>
+        var date = parseDate(vars.state);
+        vars.custom = replace(date.getDay(), {
+          0: "Sunday",
+          1: "Monday",
+          2: "Tuesday",
+          3: "Wednesday",
+          4: "Thursday",
+          5: "Friday",
+          6: "Saturday"
+        });
+        </script>
+    </button>
+    <button dash-entity="sun.sun">
+      {{custom}}
+      <script>
+        vars.custom = replace(vars.state, {
+          "above_horizon": "Day",
+          "below_horizon": "Night"
+        });
+      </script>
+
+    <!-- Rendered once (FIXME)
+    <button style="font-size: 11px">
+        {{ua}}
+        <script>vars.ua = navigator.userAgent;</script>
+    </button>
+    -->
+</div>
+
+<!-- State-text color example -->
+<div class="tiles">
+    <button dash-entity="group.all_lights">
+        Lights are <span class="state-text">{{state}}</span>
+    </button>
+
+    <button dash-entity="group.all_automations" class="state-tile">
+        Automations are <span class="state-text">{{state}}</span>
+    </button>
+
+    <button style="font-family: monospace">
+        <div dash-entity="sensor.dark_sky_icon">{{state}}</div>
+        <div dash-entity="sensor.dark_sky_cloud_coverage">cld {{state}}</div>
+    </button>
+
+    <button>
+        <div dash-entity="sensor.dark_sky_wind_speed" style="font-size: 90%">
+            {{state}} {{attributes.unit_of_measurement}}
+        </div>
+        <div dash-entity="sensor.dark_sky_wind_bearing">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+              <path d="M32,64 L40,16 L48,64 L40,52 Z" stroke="black" fill="brown" transform="rotate({{rotation}} 40 40)"/>
+            </svg>
+          <script>
+            vars.rotation = (vars.state - 180) || 0;
+          </script>
+        </div>
+    </button>
+</div>
+
+<!-- Media controls: (TODO) -->
+<div class="tiles">
+    <button dash-entity="media_player.samsung_tv_remote">{{state}}</button>
+</div>
+
+<div class="tiles">
+    <button dash-panel="main">Main</button>
+    <button dash-panel="demo">Demo</button>
+    <button dash-panel="grid">Grid test</button>
+</div>
+</body>
+</html>
